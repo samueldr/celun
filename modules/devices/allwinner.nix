@@ -10,6 +10,7 @@ let
   inherit (lib)
     concatStringsSep
     optionalString
+    mapAttrsToList
     mkOption
     types
   ;
@@ -20,7 +21,7 @@ let
   kernel = config.wip.kernel.output;
   inherit (kernel) target;
   inherit (config.wip.stage-1.output) initramfs;
-  inherit (config.device) nameForDerivation;
+  inherit (config.device) dtbFiles nameForDerivation;
 
   cfg = config.device.config.allwinner;
 
@@ -112,6 +113,51 @@ let
   } ''
     mkimage  -C none -A ${ubootPlatforms.${pkgs.targetPlatform.system}} -T script -d ${bootcmd} $out
   '';
+
+  fel-bootcmd =
+    let
+      script = pkgs.writeText "fel-boot.cmd" ''
+        setenv bootargs ${concatStringsSep " " config.boot.cmdline}
+
+        echo
+        echo === debug information ===
+        echo
+        echo bootargs: $bootargs
+        echo
+        echo kernel_addr_r:  $kernel_addr_r
+        echo fdt_addr_r:     $fdt_addr_r
+        echo ramdisk_addr_r: $ramdisk_addr_r
+        echo
+        echo === end of the debug information ===
+        echo
+
+        # NOTE: hardcoded during build; this script is tightly coupled to the inputs.
+        ramdisk_size=@initramfs_size@
+
+        ${if isAarch64 then ''
+          echo booti ''${kernel_addr_r} ''${ramdisk_addr_r}:''${ramdisk_size} ''${fdt_addr_r};
+          booti ''${kernel_addr_r} ''${ramdisk_addr_r}:''${ramdisk_size} ''${fdt_addr_r};
+        '' else ''
+          echo bootz ''${kernel_addr_r} ''${ramdisk_addr_r}:''${ramdisk_size} ''${fdt_addr_r};
+          bootz ''${kernel_addr_r} ''${ramdisk_addr_r}:''${ramdisk_size} ''${fdt_addr_r};
+        ''}
+      '';
+    in
+    pkgs.runCommandNoCC "fel-boot.cmd" {} ''
+      export initramfs_size
+      initramfs_size=$(printf '0x%x' $(stat --dereference --format '%s' ${initramfs}))
+      cat ${script} > $out
+      substituteAllInPlace $out
+    ''
+  ;
+
+  fel-bootscr = pkgs.runCommandNoCC "fel-boot.scr" {
+    nativeBuildInputs = [
+      pkgs.buildPackages.ubootTools
+    ];
+  } ''
+    mkimage  -C none -A ${ubootPlatforms.${pkgs.targetPlatform.system}} -T script -d ${fel-bootcmd} $out
+  '';
 in
 {
   options = {
@@ -135,6 +181,55 @@ in
         '';
       };
 
+      fel-firmware = mkOption {
+        type = with types; oneOf [ path package ];
+        default = cfg.firmwarePartition;
+        defaultText = "\${cfg.firmwarePartition}";
+        description = ''
+          Firmware used by the FEL boot script.
+        '';
+      };
+
+      fel-output = mkOption {
+        type = types.package;
+        internal = true;
+      };
+
+      fel-env = {
+        fdt_addr_r = mkOption {
+          type = types.str;
+          description = ''
+            Offset in memory for the FDT.
+
+            This option is used only for the FEL boot script.
+          '';
+        };
+        kernel_addr_r = mkOption {
+          type = types.str;
+          description = ''
+            Offset in memory for the kernel.
+
+            This option is used only for the FEL boot script.
+          '';
+        };
+        ramdisk_addr_r = mkOption {
+          type = types.str;
+          description = ''
+            Offset in memory for the initramfs.
+
+            This option is used only for the FEL boot script.
+          '';
+        };
+        scriptaddr = mkOption {
+          type = types.str;
+          description = ''
+            Offset in memory for the script.
+
+            This option is used only for the FEL boot script.
+          '';
+        };
+      };
+
       output = mkOption {
         type = types.package;
         internal = true;
@@ -145,6 +240,7 @@ in
   config = lib.mkIf (cfg.enable) {
     build.default = cfg.output;
     build.disk-image = cfg.output;
+    build.fel = cfg.fel-output;
     device.config.allwinner = {
       output = (pkgs.celun.image-builder.evaluateDiskImage {
         config =
@@ -200,6 +296,31 @@ in
           }
         ;
       }).config.output;
+
+      fel-output = pkgs.buildPackages.writeShellScript "boot-${nameForDerivation}" ''
+        set -e
+        set -u
+        PS4=" $ "
+
+        PATH=$PATH:${lib.makeBinPath (with pkgs.buildPackages; [ sunxi-tools ])}
+        kernel="${kernel}"
+        initramfs="${initramfs}"
+
+        ${concatStringsSep "\n" (
+          mapAttrsToList (k: v: "${k}='${v}'") cfg.fel-env
+        )}
+
+        args=(
+          uboot "${cfg.fel-firmware}"
+          write "$scriptaddr"     "${fel-bootscr}"
+          write "$kernel_addr_r"  "${kernel}/zImage"
+          write "$fdt_addr_r"     "${kernel}/dtbs/${lib.head dtbFiles}"
+          write "$ramdisk_addr_r" "${initramfs}"
+        )
+
+        set -x
+        sunxi-fel -v -p "''${args[@]}"
+      '';
     };
   };
 }

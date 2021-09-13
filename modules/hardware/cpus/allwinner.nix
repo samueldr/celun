@@ -12,6 +12,14 @@ in
       description = "Enable when system is an Allwinner A64.";
       internal = true;
     };
+    allwinner-f1c100s.enable = mkOption {
+      # CPU: ARM926EJ-S (ARMv5TE) @ 533MHz
+      # 32MiB of embedded RAM
+      type = types.bool;
+      default = false;
+      description = "Enable when system is an Allwinner F1C100s.";
+      internal = true;
+    };
   };
 
   config = mkMerge [
@@ -40,6 +48,34 @@ in
           })
         ]
       ;
+    })
+    (lib.mkIf cfg.allwinner-f1c100s.enable {
+      celun.system.system = "armv5tel-linux";
+      device = {
+        config.allwinner = {
+          enable = true;
+          fel-env = {
+            fdt_addr_r     = "0x80C00000";
+            kernel_addr_r  = "0x80500000";
+            ramdisk_addr_r = "0x80E00000";
+            scriptaddr     = "0x80C50000";
+          };
+        };
+      };
+      nixpkgs.overlays = [(final: super: {
+        sunxi-tools = super.sunxi-tools.overrideAttrs({ buildInputs ? [], ...}: {
+          name = "sunxi-tools-f1c100s";
+          src = final.fetchFromGitHub {
+            owner = "samueldr";
+            repo = "sunxi-tools";
+            rev = "56eb6e8a4222ec9b5f6b978efb73edda66878162";
+            sha256 = "0l5b5y99lkm7kmyfs7xzx279aaz1cn89zjgl6fm7blzw43j92qzy";
+          };
+          buildInputs = buildInputs ++ [
+            final.dtc
+          ];
+        });
+      })];
     })
   ];
 }

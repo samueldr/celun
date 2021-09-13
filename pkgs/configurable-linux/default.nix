@@ -66,6 +66,12 @@ let
   validatorSnippet = pkgs.writeShellScript "${name}-validator-snippet" ''
     ${evaluatedStructuredConfig.config.validatorSnippet}
   '';
+
+  target =
+    if stdenv.hostPlatform.linux-kernel.target == "uImage"
+    then "zImage" # We're not using uImage.
+    else stdenv.hostPlatform.linux-kernel.target
+  ;
 in
 
 (
@@ -81,6 +87,7 @@ linuxManualConfig rec {
   inherit configfile;
 }
 ).overrideAttrs({ postPatch ? "", postInstall ? "" , nativeBuildInputs ? [], ... }: {
+  inherit target;
 
   postConfigure = ''
     (cd $buildRoot
@@ -117,6 +124,10 @@ linuxManualConfig rec {
       cp ${logoPPM} drivers/video/logo/logo_linux_clut224.ppm
     ''}
   '';
+
+  installTargets = [ "install" ]
+   ++ lib.optional (target == "zImage") "zinstall" ;
+  extraMakeFlags = [ target ];
 
   postInstall = postInstall + ''
     cp .config $out/config

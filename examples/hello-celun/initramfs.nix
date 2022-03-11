@@ -83,6 +83,8 @@ in
         # (Or when missing, a default console may be launched on e.g. serial)
         # No console will be available on other valid consoles.
         console::respawn:${extraUtils}/bin/getty -l ${extraUtils}/bin/login 0 console
+        ttyGS0::respawn:${extraUtils}/bin/getty -l ${extraUtils}/bin/login 0 ttyGS0
+        tty2::respawn:${extraUtils}/bin/getty -l ${extraUtils}/bin/login 0 tty2
 
         # Launch all setup tasks
         ::sysinit:${extraUtils}/bin/sh -l -c ${extraUtils}/bin/mount-basic-mounts
@@ -120,6 +122,70 @@ in
         exec linuxrc
       '';
 
+      # Place init under /etc/ to make / prettier
+      vsync-test = writeScriptDir "/vsync-test" ''
+        #!${extraUtils}/bin/sh
+
+        echo
+        echo "::"
+        echo ":: Really causing trouble here"
+        echo "::"
+        echo
+
+        # Close enough
+        yes $(printf '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff') > /dev/fb0
+        cat /dev/fb0 > whiteish
+        cat /dev/zero > /dev/fb0
+        cat /dev/fb0 > black
+        while true; do
+        sleep 0.1
+        cat whiteish > /dev/fb0
+        sleep 0.1
+        cat black > /dev/fb0
+        done
+      '';
+
+      audio-test = writeScriptDir "/audio-test" ''
+        #!${extraUtils}/bin/sh
+        # https://tldp.org/LDP/abs/html/devref1.html
+        # music.sh
+
+        # Music without external files
+
+        # Author: Antonio Macchi
+        # Used in ABS Guide with permission.
+
+
+        #  /dev/dsp default = 8000 frames per second, 8 bits per frame (1 byte),
+        #+ 1 channel (mono)
+
+        duration=2000       # If 8000 bytes = 1 second, then 2000 = 1/4 second.
+        volume=$'\xc0'      # Max volume = \xff (or \x00).
+        mute=$'\x80'        # No volume = \x80 (the middle).
+
+        function mknote ()  # $1=Note Hz in bytes (e.g. A = 440Hz ::
+        {                   #+ 8000 fps / 440 = 16 :: A = 16 bytes per second)
+          for t in `seq 0 $duration`
+          do
+            test $(( $t % $1 )) = 0 && echo -n $volume || echo -n $mute
+          done
+        }
+
+        e=`mknote 49`
+        g=`mknote 41`
+        a=`mknote 36`
+        b=`mknote 32`
+        c=`mknote 30`
+        cis=`mknote 29`
+        d=`mknote 27`
+        e2=`mknote 24`
+        n=`mknote 32767`
+        # European notation.
+
+        echo -n "$g$e2$d$c$d$c$a$g$n$g$e$n$g$e2$d$c$c$b$c$cis$n$cis$d \
+        $n$g$e2$d$c$d$c$a$g$n$g$e$n$g$a$d$c$b$a$b$c" > /dev/dsp
+      '';
+
       extraUtils = runCommandNoCC "hello-celun--initramfs-extraUtils" {
         passthru = {
           inherit extraUtils;
@@ -141,6 +207,14 @@ in
         package = busybox;
         extraCommand = ''
           (cd $out/bin/; ln -s busybox linuxrc)
+        '';
+      }
+      {
+        package = pkgs.alsaUtils.override({
+          libsamplerate = null;
+          fftw = null;
+        });
+        extraCommand = ''
         '';
       }
 

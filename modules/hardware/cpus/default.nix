@@ -10,6 +10,7 @@ in
 
     ./allwinner.nix
     ./rockchip.nix
+    ./sigmastar.nix
   ];
 
   options.hardware = {

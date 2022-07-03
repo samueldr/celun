@@ -86,8 +86,17 @@ linuxManualConfig rec {
   kernelPatches = allPatches;
   inherit configfile;
 }
-).overrideAttrs({ postPatch ? "", postInstall ? "" , nativeBuildInputs ? [], ... }: {
+).overrideAttrs(
+  { patches ? []
+  , postPatch ? ""
+  , postInstall ? "" 
+  , nativeBuildInputs ? []
+  , ...
+  }: {
   inherit target;
+
+  # Work around issue where Nixpkgs logic creates a (2 deep) cycle and re-adds patches.
+  patches = lib.unique patches;
 
   postConfigure = ''
     (cd $buildRoot

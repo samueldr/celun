@@ -15,6 +15,7 @@
 , version ? src.version
 , src
 , patches
+, postInstall ? ""
 , structuredConfig
 , kernelPatches ? []
 , defconfig
@@ -27,6 +28,7 @@
 # assumed way too much about the kernel that is going to be built :<
 
 let
+  postInstall' = postInstall;
   evaluatedStructuredConfig = import ./eval-config.nix {
     inherit (pkgs) path;
     inherit lib structuredConfig version;
@@ -158,6 +160,7 @@ linuxManualConfig rec {
       echo 
       size "$buildRoot"/*/built-in.o "$buildRoot"/*/built-in.a | sort -n -r -k 4
     ) > $out/built-ins.txt
+    ${postInstall'}
   '';
 
   # FIXME: add lz4 / lzop only if compression requires it

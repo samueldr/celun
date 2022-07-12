@@ -21,6 +21,13 @@
         VT_CONSOLE = yes;
         FRAMEBUFFER_CONSOLE = yes;
       }
+      {
+        # For storage
+        PCI = yes;
+        PCI_VERSATILE = yes;
+        SCSI = yes;
+        SCSI_SYM53C8XX_2 = yes;
+      }
       # TODO: disable/enable kernel config according to features.
     ]
   ;

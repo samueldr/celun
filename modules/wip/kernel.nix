@@ -160,6 +160,13 @@ in
           Converted output for the Linux logo.
         '';
       };
+      isModular = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Whether kernel modules are built or not.
+        '';
+      };
       output = mkOption {
         type = types.package;
         internal = true;
@@ -189,7 +196,7 @@ in
         )
       '');
       kernel.output = pkgs.celun.configurableLinux {
-        inherit (config.wip.kernel) defconfig structuredConfig logoPPM;
+        inherit (config.wip.kernel) defconfig structuredConfig logoPPM isModular;
         inherit (config.wip.kernel.package) src version patches;
       };
 

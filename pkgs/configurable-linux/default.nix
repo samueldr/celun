@@ -19,6 +19,7 @@
 , kernelPatches ? []
 , defconfig
 , logoPPM ? null
+, isModular
 }:
 
 # Note:
@@ -84,7 +85,12 @@ linuxManualConfig rec {
     "KBUILD_BUILD_VERSION=1-celun"
   ];
   kernelPatches = allPatches;
+  # TODO: normalize the config so that config works with allowImportFromDerivation
   inherit configfile;
+  config = {
+    # FIXME: use the normalized config so CONFIG_MODULES is used from actual config.
+    CONFIG_MODULES = if isModular then "y" else "n";
+  };
 }
 ).overrideAttrs(
   { patches ? []
@@ -139,9 +145,13 @@ linuxManualConfig rec {
   extraMakeFlags = [ target ];
 
   postInstall = postInstall + ''
-    cp .config $out/config
+    (
+      cd $buildRoot
+      cp .config $out/config
+    )
 
     (
+      cd $buildRoot
       echo 'Built-ins:'
       echo '   text    data     bss     dec     hex filename'
       echo '================================================'

@@ -1,6 +1,6 @@
 let
-  rev = "5bc8b980b9178ef9a4bb622320cf34e59ea2ea10";
-  sha256 = "1zw8cigi50q6qac9nvb981p276bp5ap96sbdfgzrjf9m6210g6rk";
+  rev = "18b14a254dca6b68ca0ce2ce885ce2b550065799";
+  sha256 = "05npkk8hqa1x47xhzs9cdhsp0mlyhrav203dbfrg2jc9dq04rqyc";
 in
 import (
   builtins.fetchTarball {

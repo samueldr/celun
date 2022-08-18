@@ -6,6 +6,12 @@ let
 in
 {
   options.hardware.cpus = {
+    rockchip-rk3326.enable = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable when system is a Rockchip RK3326.";
+      internal = true;
+    };
     rockchip-rk3399.enable = mkOption {
       type = types.bool;
       default = false;
@@ -15,6 +21,9 @@ in
   };
 
   config = mkMerge [
+    (lib.mkIf cfg.rockchip-rk3326.enable {
+      celun.system.system = "aarch64-linux";
+    })
     (lib.mkIf cfg.rockchip-rk3399.enable {
       celun.system.system = "aarch64-linux";
       wip.u-boot = {

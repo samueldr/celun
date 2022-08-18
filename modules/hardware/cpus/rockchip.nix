@@ -4,12 +4,19 @@ let
   inherit (lib) any mkIf mkMerge mkOption types;
   cfg = config.hardware.cpus;
   anyRockchip = any (x: x) [
+    cfg.rockchip-rk3326.enable
     cfg.rockchip-rk3399.enable
     cfg.rockchip-rk3566.enable
   ];
 in
 {
   options.hardware.cpus = {
+    rockchip-rk3326.enable = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable when system is a Rockchip RK3326.";
+      internal = true;
+    };
     rockchip-rk3399.enable = mkOption {
       type = types.bool;
       default = false;
@@ -25,6 +32,9 @@ in
   };
 
   config = mkMerge [
+    (lib.mkIf cfg.rockchip-rk3326.enable {
+      celun.system.system = "aarch64-linux";
+    })
     (lib.mkIf cfg.rockchip-rk3399.enable {
       celun.system.system = "aarch64-linux";
       wip.u-boot = {

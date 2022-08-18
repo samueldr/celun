@@ -27,6 +27,7 @@
         PCI_VERSATILE = yes;
         SCSI = yes;
         SCSI_SYM53C8XX_2 = yes;
+        BLK_DEV_SD = yes;
       }
       # TODO: disable/enable kernel config according to features.
     ]

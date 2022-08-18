@@ -56,7 +56,6 @@ stdenvNoCC.mkDerivation (config.buildPhases // {
     (
       cd "$files"
       faketime -f "1970-01-01 00:00:01" tree -a | xz > $metadata/tree.xz
-      faketime -f "1970-01-01 00:00:01" ncdu -0x -o - | xz > $metadata/ncdu.xz
     )
 
     set +u

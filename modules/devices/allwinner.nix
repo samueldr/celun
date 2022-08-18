@@ -11,6 +11,7 @@ let
     concatStringsSep
     optionalString
     mapAttrsToList
+    mkDefault
     mkOption
     types
   ;
@@ -238,8 +239,8 @@ in
   };
 
   config = lib.mkIf (cfg.enable) {
-    build.default = cfg.output;
-    build.disk-image = cfg.output;
+    build.default = mkDefault cfg.output;
+    build.disk-image = mkDefault cfg.output;
     build.fel = cfg.fel-output;
     device.config.allwinner = {
       output = (pkgs.celun.image-builder.evaluateDiskImage {

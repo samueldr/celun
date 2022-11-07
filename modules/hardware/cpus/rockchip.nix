@@ -72,6 +72,9 @@ in
         ]
       ;
     })
+    (lib.mkIf cfg.rockchip-rk3566.enable {
+      celun.system.system = "aarch64-linux";
+    })
   ];
 }
 

@@ -22,6 +22,7 @@
 , defconfig
 , logoPPM ? null
 , isModular
+, installTargets ? []
 }:
 
 # Note:
@@ -139,7 +140,9 @@ linuxManualConfig rec {
   '';
 
   installTargets = [ "install" ]
-   ++ lib.optional (target == "zImage") "zinstall" ;
+    ++ lib.optional (target == "zImage") "zinstall" 
+    ++ installTargets
+  ;
   extraMakeFlags = [ target ];
 
   postInstall = postInstall + ''

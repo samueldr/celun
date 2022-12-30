@@ -167,6 +167,14 @@ in
           Whether kernel modules are built or not.
         '';
       };
+      installTargets = mkOption {
+        # TODO: prefer attrsOf with `{ dtbs = true; }` form when we rewrite kernel building.
+        type = with types; listOf str;
+        default = [];
+        description = ''
+          Install targets.
+        '';
+      };
       output = mkOption {
         type = types.package;
         internal = true;
@@ -196,7 +204,7 @@ in
         )
       '');
       kernel.output = pkgs.celun.configurableLinux {
-        inherit (config.wip.kernel) defconfig structuredConfig logoPPM isModular;
+        inherit (config.wip.kernel) defconfig structuredConfig logoPPM isModular installTargets;
         inherit (config.wip.kernel.package) src version patches;
         postInstall = config.wip.kernel.package.postInstall or "";
       };

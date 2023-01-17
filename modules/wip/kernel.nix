@@ -274,6 +274,10 @@ in
             RD_ZSTD = no;
           }
 
+          {
+            CC_OPTIMIZE_FOR_SIZE = mkDefault yes;
+          }
+
           (lib.mkIf (stdenv.isx86_32 || stdenv.isx86_64) {
             # choice: Kernel compression mode
             # (Only one of these options can be turned on)

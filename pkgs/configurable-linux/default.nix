@@ -33,7 +33,10 @@ let
   postInstall' = postInstall;
   evaluatedStructuredConfig = import ./eval-config.nix {
     inherit (pkgs) path;
-    inherit lib structuredConfig version;
+    inherit lib version;
+    structuredConfig = structuredConfig // {
+      MODULES = lib.mkIf isModular lib.kernel.yes;
+    };
   };
 
   defconfigFile =

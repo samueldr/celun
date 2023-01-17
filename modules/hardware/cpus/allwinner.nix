@@ -14,6 +14,10 @@ let
     cfg.allwinner-f1c100s.enable
     cfg.allwinner-f1c200s.enable
   ];
+
+  any32bitAllwinner = any (x: x) [
+    anyF1cx00s
+  ];
 in
 {
   options.hardware.cpus = {
@@ -64,6 +68,21 @@ in
             # ... and using tinyconfig does not play nice.
             # XXX # SERIAL_8250_DW = yes;
             # XXX # SERIAL_OF_PLATFORM = yes;
+          })
+        ]
+      ;
+    })
+    (lib.mkIf any32bitAllwinner {
+      wip.kernel.structuredConfig =
+        with lib.kernel;
+        let
+          inherit (config.wip.kernel) features;
+        in
+        lib.mkMerge [
+          (lib.mkIf features.serial {
+            # ARM_AMBA is not selected by `arm/mach-sunxi`.
+            SERIAL_AMBA_PL011 = no;
+            SERIAL_AMBA_PL011_CONSOLE = no;
           })
         ]
       ;

@@ -61,10 +61,15 @@ in
         SERIAL_8250 = yes;
         SERIAL_8250_CONSOLE = yes;
       }
-      (mkIf (stdenv.isAarch32 || stdenv.isAarch64) {
-        # ARM
+      (mkIf (stdenv.isAarch64) {
+        # ARM_AMBA required on 64 bit ARM platforms
         SERIAL_AMBA_PL011 = yes;
         SERIAL_AMBA_PL011_CONSOLE = yes;
+      })
+      (mkIf (stdenv.isAarch32) {
+        # Some 32 bit ARM platforms may not have ARM_AMBA
+        SERIAL_AMBA_PL011 = mkDefault (option yes);
+        SERIAL_AMBA_PL011_CONSOLE = mkDefault (option yes);
       })
     ]))
 

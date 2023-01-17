@@ -1,8 +1,19 @@
 { config, lib, pkgs, ... }:
 
 let
-  inherit (lib) mkIf mkMerge mkOption types;
+  inherit (lib)
+    any
+    mkIf
+    mkMerge
+    mkOption
+    types
+  ;
   cfg = config.hardware.cpus;
+
+  anyF1cx00s = any (x: x) [
+    cfg.allwinner-f1c100s.enable
+    cfg.allwinner-f1c200s.enable
+  ];
 in
 {
   options.hardware.cpus = {
@@ -18,6 +29,14 @@ in
       type = types.bool;
       default = false;
       description = "Enable when system is an Allwinner F1C100s.";
+      internal = true;
+    };
+    allwinner-f1c200s.enable = mkOption {
+      # CPU: ARM926EJ-S (ARMv5TE) @ 533MHz
+      # 64MiB of embedded RAM
+      type = types.bool;
+      default = false;
+      description = "Enable when system is an Allwinner F1C200s.";
       internal = true;
     };
   };
@@ -49,7 +68,10 @@ in
         ]
       ;
     })
-    (lib.mkIf cfg.allwinner-f1c100s.enable {
+    (lib.mkIf anyF1cx00s {
+      # xz may fail to uncompress due to lack of memory
+      wip.stage-1.compression = "gzip";
+
       celun.system.system = "armv5tel-linux";
       device = {
         config.allwinner = {

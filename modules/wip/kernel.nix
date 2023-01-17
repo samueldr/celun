@@ -1,7 +1,8 @@
 { config, lib, pkgs, ... }:
 
 let
-  inherit (pkgs) stdenv;
+  inherit (pkgs) stdenv targetPlatform;
+  inherit (lib.systems.parse) abis;
   inherit (lib)
     mkDefault
     mkIf
@@ -289,6 +290,11 @@ in
 
             # Verdict: "for size" winner is xz.
             # Decompression speed not tested; supposedly zstd would win.
+          })
+          (lib.mkIf (targetPlatform.isAarch32 && (targetPlatform.parsed.abi == abis.gnueabihf || targetPlatform.parsed.abi == abis.gnueabi)) {
+            # Ensures the kernel is configured to run the userspace.
+            # (Some specific vendor defconfigs may not enable it by default)
+            AEABI = yes;
           })
         ]
       ;

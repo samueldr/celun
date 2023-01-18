@@ -36,6 +36,18 @@ in
     config.allwinner = {
       embedFirmware = true;
       firmwarePartition = "${u-boot}/u-boot-sunxi-with-spl.bin";
+
+      # Unclear whether this is an allwinner-wide bug, or f1c100s only...
+      # But FEL-booted systems don't see the environment set by the FEL tool.
+      # NOTE: it's assumed that we'll use FEL only with mainline U-Boot...
+      #       this is not the expected way to run anything really.
+      fel-firmware = (u-boot.overrideAttrs({preConfigure ? "", ...}: {
+        preConfigure = preConfigure + ''
+          cat <<EOF >> configs/popstick_defconfig
+          CONFIG_BOOTCOMMAND="source \''${scriptaddr}"
+          EOF
+        '';
+      })) + "/u-boot-sunxi-with-spl.bin";
     };
   };
 
